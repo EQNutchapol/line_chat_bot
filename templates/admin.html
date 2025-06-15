@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; color: #202124; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background-color: #00B900; color: white; padding: 1.5rem; border-top-left-radius: 8px; border-top-right-radius: 8px; text-align: center;}
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        .content { padding: 2rem; }
+        h2 { border-bottom: 2px solid #00B900; padding-bottom: 8px; margin-bottom: 1rem; color: #00B900;}
+        #user-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px;}
+        .user-item { padding: 8px 12px; background-color: #e6ffed; color: #008a2e; border-radius: 16px; font-weight: 500;}
+        .game-setup-form { background-color: #f1f3f4; padding: 1.5rem; border-radius: 8px; margin-top: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+        .form-group input[type="radio"], .form-group input[type="number"] { margin-right: 8px; }
+        .button {
+            display: block; width: 100%; padding: 12px; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 1.2rem; font-weight: 700;
+            transition: background-color 0.3s; margin-top: 1rem;
+        }
+        .start-button { background-color: #28a745; }
+        .start-button:hover { background-color: #218838; }
+        .clear-button { background-color: #dc3545; }
+        .clear-button:hover { background-color: #c82333; }
+        #no-users-message { color: #5f6368; padding: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h1>Admin Control Panel</h1></div>
+        <div class="content">
+            <h2>Players in Lobby (<span id="player-count">0</span>)</h2>
+            <ul id="user-list"></ul>
+            <p id="no-users-message">No players are currently waiting.</p>
+            <button class="button clear-button" onclick="clearLobby()">Clear Lobby</button>
+
+            <div class="game-setup-form">
+                <h2>Game Setup</h2>
+                <div class="form-group">
+                    <label>Select Game:</label>
+                    <input type="radio" id="spyfall" name="game" value="spyfall" checked onchange="toggleSpyfallSettings()"> Spyfall
+                    <input type="radio" id="insider" name="game" value="insider" onchange="toggleSpyfallSettings()"> Insider
+                </div>
+                <div class="form-group" id="spyfall-settings">
+                    <label for="num_spies">Number of Spies:</label>
+                    <input type="number" id="num_spies" name="num_spies" value="1" min="1">
+                </div>
+                <button class="button start-button" onclick="startGame()">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSpyfallSettings() {
+            const spyfallSettings = document.getElementById('spyfall-settings');
+            if (document.getElementById('spyfall').checked) {
+                spyfallSettings.style.display = 'block';
+            } else {
+                spyfallSettings.style.display = 'none';
+            }
+        }
+
+        async function clearLobby() {
+            if (!confirm('Are you sure you want to remove all players from the lobby?')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/clear_lobby', { method: 'POST' });
+                const result = await response.json();
+                if(result.status === 'success') {
+                    alert('Lobby has been cleared.');
+                    updateUserList();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Connection error: ' + error);
+            }
+        }
+
+        async function startGame() {
+            const game = document.querySelector('input[name="game"]:checked').value;
+            const numSpies = document.getElementById('num_spies').value;
+
+            try {
+                const response = await fetch('/api/start_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ game: game, num_spies: parseInt(numSpies) })
+                });
+                const result = await response.json();
+                if(result.status === 'success') {
+                    alert('Game started and roles have been sent to all players!');
+                    updateUserList();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Connection error: ' + error);
+            }
+        }
+
+        async function updateUserList() {
+            try {
+                const response = await fetch('/api/users');
+                const users = await response.json();
+
+                const userList = document.getElementById('user-list');
+                const noUsersMessage = document.getElementById('no-users-message');
+                const playerCount = document.getElementById('player-count');
+
+                userList.innerHTML = '';
+                const userIds = Object.keys(users);
+                playerCount.textContent = userIds.length;
+
+                if (userIds.length > 0) {
+                    noUsersMessage.style.display = 'none';
+                    userIds.forEach(id => {
+                        const user = users[id];
+                        const listItem = document.createElement('li');
+                        listItem.className = 'user-item';
+                        listItem.textContent = user;
+                        userList.appendChild(listItem);
+                    });
+                } else {
+                    noUsersMessage.style.display = 'block';
+                }
+            } catch(error) {
+                console.error("Failed to fetch users:", error);
+            }
+        }
+
+        window.onload = function() {
+            toggleSpyfallSettings();
+            updateUserList();
+            setInterval(updateUserList, 3000);
+        };
+    </script>
+</body>
+</html>

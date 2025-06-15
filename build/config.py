@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
+
+# Load variables from the .env file into the environment
+load_dotenv()
 
 # --- LINE Bot Credentials ---
-# Reads credentials from Environment Variables, with a fallback for local testing.
-LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET', "36de42062e0606dcc2c908b30ad4662c")
-LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', "W88l5fyv6eFvNSSHAjayBoExUNAHJ2nWftVYBFV0JfE8nT8SxQupNOqVoNfFgSWO5/kD6+mT4Faa7I0RFPS7cd/HOEwY12nSAJ2Xg7Faw565PR9uHTfaRacTwGVLKeBPWajmHdKUwbzhLmi9uC1HzwdB04t89/1O/w1cDnyilFU=")
-
+# Reads credentials securely from the environment.
+LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET')
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN')
 # --- Game Data ---
 # SpyFall locations and roles
 SPYFALL_LOCATIONS = {

@@ -5,7 +5,8 @@ from linebot.models import TextSendMessage
 from game_logic import assign_spyfall_roles, assign_insider_roles
 from config import SPYFALL_LOCATIONS  # Import location data for validation
 
-admin_bp = Blueprint('admin', __name__, template_folder='templates')
+# The template_folder argument is removed here. The main app will find the template.
+admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 line_bot_api = None
 waiting_users = None
 
@@ -19,7 +20,7 @@ def init_admin(api, users):
 
 @admin_bp.route("/admin")
 def admin_panel():
-    # Flask will now look for 'admin.html' in the 'templates' folder.
+    # Flask will now correctly look for 'admin.html' in the root templates folder.
     return render_template('admin.html')
 
 
@@ -48,7 +49,6 @@ def start_game():
         # The number of spies now represents the number of groups.
         num_groups = int(data.get('num_spies', 1))
 
-        # --- NEW VALIDATION ---
         # Prevents setting more groups than available unique locations.
         if num_groups > len(SPYFALL_LOCATIONS):
             return jsonify({'status': 'error',

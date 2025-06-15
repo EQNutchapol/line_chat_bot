@@ -32,12 +32,14 @@ Ensure all project files are in a single folder with the following structure:
 |-- templates/
 |   |-- admin.html
 |
-|-- config.py
-|-- game_logic.py
-|-- bot_handlers.py
-|-- admin_routes.py
-|-- app.py
+|-- build/
+|   |-- config.py
+|   |-- game_logic.py
+|   |--bot_handlers.py
+|   |--admin_routes.py
+|   |--app.py
 |-- requirements.txt
+|-- .env (Local environment variables)
 ```
 
 ### 2. Install Dependencies

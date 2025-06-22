@@ -6,7 +6,7 @@ from linebot import LineBotApi, WebhookHandler
 from pyngrok import ngrok
 
 # Import config and blueprints
-from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN
+from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, NG_GROK_DOMAIN
 from bot_handlers import bot_bp, init_bot
 from admin_routes import admin_bp, init_admin
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     time.sleep(2)  # Give the server a moment to start
 
     try:
-        public_url = ngrok.connect(port, domain="only-optimal-pheasant.ngrok-free.app").public_url
+        public_url = ngrok.connect(port, domain=NG_GROK_DOMAIN).public_url
 
         print("--- ngrok tunnel is active ---")
         print(f"!!! IMPORTANT: Webhook URL: {public_url}/callback")

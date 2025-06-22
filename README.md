@@ -22,25 +22,15 @@ Before you begin, ensure you have the following:
 
 Follow these steps to get your application running.
 
-### 1. Set Up Project Files
+### 1. Set Up .env File
 
-Ensure all project files are in a single folder with the following structure:
+Create .env file in project root directory and add the following variables:
+```
+LINE_CHANNEL_SECRET="{Your Channel Secret}"
+LINE_CHANNEL_ACCESS_TOKEN="{Your Channel Access Token}"
+NG_GROK_DOMAIN="{Your ngrok domain}"
+```
 
-```
-/project-folder
-|
-|-- templates/
-|   |-- admin.html
-|
-|-- build/
-|   |-- config.py
-|   |-- game_logic.py
-|   |--bot_handlers.py
-|   |--admin_routes.py
-|   |--app.py
-|-- requirements.txt
-|-- .env (Local environment variables)
-```
 
 ### 2. Install Dependencies
 
@@ -49,13 +39,6 @@ Open your terminal, navigate to your project folder, and run the following comma
 ```bash
 pip install -r requirements.txt
 ```
-
-### 3. Configure Credentials
-
-1.  Open the `config.py` file.
-2.  Replace `"YOUR_CHANNEL_SECRET"` and `"YOUR_CHANNEL_ACCESS_TOKEN"` with the actual credentials from your LINE Developers Console. You can find these under the "Messaging API" tab for your channel.
-
----
 
 ## ▶️ Running the Application
 
@@ -68,7 +51,7 @@ pip install -r requirements.txt
 2.  **Update the LINE Webhook URL**
     * When the script starts, it will print an `ngrok` URL in the terminal. It will look like this:
         ```
-        !!! IMPORTANT: Webhook URL: [https://only-optimal-pheasant.ngrok-free.app/callback](https://only-optimal-pheasant.ngrok-free.app/callback)
+        !!! IMPORTANT: Webhook URL: "{Your ngrok URL}/callback"
         ```
     * Copy the full Webhook URL (`https://.../callback`).
     * Go to your [LINE Developers Console](https://developers.line.biz/).
@@ -78,7 +61,7 @@ pip install -r requirements.txt
 3.  **Access the Admin Panel**
     * The terminal will also print the URL for the Admin Panel:
         ```
-        Admin Panel: [https://only-optimal-pheasant.ngrok-free.app/admin](https://only-optimal-pheasant.ngrok-free.app/admin)
+        Admin Panel: [{Your ngrok URL}/admin]({Your ngrok URL}/admin)
         ```
     * Open this URL in your web browser to control the game.
 

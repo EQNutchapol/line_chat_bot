@@ -8,6 +8,8 @@ load_dotenv()
 # Reads credentials securely from the environment.
 LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET')
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN')
+NG_GROK_DOMAIN = os.environ.get('NG_GROK_DOMAIN')
+
 # --- Game Data ---
 # SpyFall locations and roles
 SPYFALL_LOCATIONS = {

@@ -47,7 +47,7 @@
                     <input type="radio" id="insider" name="game" value="insider" onchange="toggleSpyfallSettings()"> Insider
                 </div>
                 <div class="form-group" id="spyfall-settings">
-                    <label for="num_spies">Number of Spies:</label>
+                    <label for="num_spies">Number of Groups (and Spies):</label>
                     <input type="number" id="num_spies" name="num_spies" value="1" min="1">
                 </div>
                 <button class="button start-button" onclick="startGame()">Start Game</button>
@@ -66,7 +66,7 @@
         }
 
         async function clearLobby() {
-            if (!confirm('Are you sure you want to remove all players from the lobby?')) {
+            if (!confirm('Are you sure you want to remove all players from the lobby? This will also clear any previous game results.')) {
                 return;
             }
             try {
@@ -94,9 +94,11 @@
                     body: JSON.stringify({ game: game, num_spies: parseInt(numSpies) })
                 });
                 const result = await response.json();
-                if(result.status === 'success') {
-                    alert('Game started and roles have been sent to all players!');
-                    updateUserList();
+
+                // --- NEW REDIRECTION LOGIC ---
+                if(result.status === 'success' && result.redirect_url) {
+                    // Redirect to the results page instead of showing an alert.
+                    window.location.href = result.redirect_url;
                 } else {
                     alert('Error: ' + result.message);
                 }

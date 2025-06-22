@@ -11,7 +11,7 @@ from bot_handlers import bot_bp, init_bot
 from admin_routes import admin_bp, init_admin
 
 # --- Main App Setup ---
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Check if credentials are set
 if "YOUR_CHANNEL_SECRET" in LINE_CHANNEL_SECRET or "YOUR_CHANNEL_ACCESS_TOKEN" in LINE_CHANNEL_ACCESS_TOKEN:
@@ -59,6 +59,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"An error occurred while starting ngrok: {e}")
-    finally:
-        print("\nShutting down...")
-        ngrok.disconnect()

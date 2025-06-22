@@ -2,3 +2,4 @@ Flask
 line-bot-sdk
 pyngrok
 python-dotenv
+flask

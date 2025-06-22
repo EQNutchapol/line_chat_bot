@@ -6,52 +6,77 @@ from config import SPYFALL_LOCATIONS, INSIDER_WORDS
 def assign_spyfall_roles(player_ids, player_names, num_groups):
     """
     Assigns roles for Spyfall based on groups.
-    - Each group gets a *unique* location.
-    - If num_groups < total locations, some locations will be unused.
+    - Each group gets a unique location and has one spy.
+    - All spies know who the other spies are.
+    - Returns a tuple containing:
+      1. A list of (user_id, message) assignments for the bot to send.
+      2. A detailed dictionary of the game results for the admin page.
     """
-    assignments = []
 
-    # Combine player IDs and names, then shuffle them for random group assignment.
     players = list(zip(player_ids, player_names))
     random.shuffle(players)
 
-    # Distribute players into groups in a round-robin fashion for equal distribution.
+    # Distribute players into groups
     groups = [[] for _ in range(num_groups)]
     for i, player in enumerate(players):
         groups[i % num_groups].append(player)
 
-    # Get all available locations and shuffle them to ensure randomness.
-    # This is the key part of the new logic.
+    # Prepare data structures
+    message_assignments = []
+    game_results = {
+        "spy_group": [],
+        "civilian_groups": []
+    }
+
+    # First pass: Identify all spies
+    all_spies = []
+    for group in groups:
+        if group:
+            all_spies.append({"id": group[0][0], "name": group[0][1]})
+
+    # Add the consolidated spy list to the results
+    game_results["spy_group"] = [spy["name"] for spy in all_spies]
+
+    # Second pass: Assign roles, generate messages, and build detailed results
     available_locations = list(SPYFALL_LOCATIONS.items())
     random.shuffle(available_locations)
 
-    # Process each group, assigning a unique location from the shuffled list.
     for i, group in enumerate(groups):
-        if not group:  # Skip if a group happens to be empty.
+        if not group:
             continue
 
-        # Assign a unique, shuffled location to each group.
         location, available_careers = available_locations[i]
-        random.shuffle(available_careers)  # Shuffle careers for random assignment.
+        random.shuffle(available_careers)
 
-        # The first person in the shuffled group list becomes the spy.
         spy_player_id, spy_player_name = group[0]
-
-        # All other players in the group are civilians.
         civilian_players = group[1:]
 
-        # Generate and store the assignment message for the spy.
-        spy_message = "คุณคือ Spy! 🕵️‍♂️\nภารกิจของคุณคือการหาให้ได้ว่าทุกคนอยู่ที่ไหน โดยห้ามให้ใครรู้ว่าคุณคือสปาย"
-        assignments.append((spy_player_id, spy_message))
+        # Create message for the spy
+        other_spy_names = [s["name"] for s in all_spies if s["id"] != spy_player_id]
+        spy_message = "คุณคือ Spy! 🕵️‍♂️\nภารกิจของคุณและทีมของคุณคือการแทรกซึมกลุ่มอื่น ๆ ให้ครบทุกกลุ่ม โดยห้ามให้ใครรู้ว่าคุณคือ Spy"
+        if other_spy_names:
+            spy_message += f"\n\nSpy ในกลุ่มอื่น ๆ คือ: {', '.join(other_spy_names)}"
+        message_assignments.append((spy_player_id, spy_message))
 
-        # Generate and store assignments for all civilians in the group.
+        # Create civilian group details for the results page
+        civilian_group_details = {
+            "location": location,
+            "members": []
+        }
+
+        # Add this group's spy to the group details for display
+        civilian_group_details["members"].append(f"{spy_player_name} (Spy)")
+
+        # Create messages and details for civilians
         for j, (civilian_id, civilian_name) in enumerate(civilian_players):
-            # Assign a unique career. If we run out of unique careers, cycle them.
             career = available_careers[j % len(available_careers)]
             civilian_message = f"สถานที่: {location}\nบทบาทของคุณ: {career}"
-            assignments.append((civilian_id, civilian_message))
+            message_assignments.append((civilian_id, civilian_message))
+            civilian_group_details["members"].append(f"{civilian_name} (Role: {career})")
 
-    return assignments
+        game_results["civilian_groups"].append(civilian_group_details)
+
+    return message_assignments, game_results
 
 
 def assign_insider_roles(player_ids):

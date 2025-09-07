@@ -1,45 +1,35 @@
-# game_logic.py
 import random
-from config import SPYFALL_LOCATIONS, INSIDER_WORDS
+from build.config import SPYFALL_LOCATIONS, CHARADE_WORDS, TABOO_WORDS
 
 
 def assign_spyfall_roles(player_ids, player_names, num_groups):
     """
-    Assigns roles for Spyfall based on groups.
-    - Each group gets a unique location and has one spy.
-    - All spies know who the other spies are.
-    - Returns a tuple containing:
-      1. A list of (user_id, message) assignments for the bot to send.
-      2. A detailed dictionary of the game results for the admin page.
+    Assigns roles for Spyfall and prepares words and initial scores for each group.
     """
 
     players = list(zip(player_ids, player_names))
     random.shuffle(players)
 
-    # Distribute players into groups
     groups = [[] for _ in range(num_groups)]
     for i, player in enumerate(players):
         groups[i % num_groups].append(player)
 
-    # Prepare data structures
     message_assignments = []
     game_results = {
+        "game_type": "spyfall",
         "spy_group": [],
         "civilian_groups": []
     }
 
-    # First pass: Identify all spies
     all_spies = []
     for group in groups:
         if group:
             all_spies.append({"id": group[0][0], "name": group[0][1]})
-
-    # Add the consolidated spy list to the results
     game_results["spy_group"] = [spy["name"] for spy in all_spies]
 
-    # Second pass: Assign roles, generate messages, and build detailed results
-    available_locations = list(SPYFALL_LOCATIONS.items())
-    random.shuffle(available_locations)
+    available_locations = random.sample(list(SPYFALL_LOCATIONS.items()), num_groups)
+    shuffled_charades = random.sample(CHARADE_WORDS, len(CHARADE_WORDS))
+    shuffled_taboos = random.sample(TABOO_WORDS, len(TABOO_WORDS))
 
     for i, group in enumerate(groups):
         if not group:
@@ -48,51 +38,63 @@ def assign_spyfall_roles(player_ids, player_names, num_groups):
         location, available_careers = available_locations[i]
         random.shuffle(available_careers)
 
+        charade_words_for_group = shuffled_charades[i * 15: (i + 1) * 15]
+        taboo_words_for_group = shuffled_taboos[i * 5: (i + 1) * 5]
+
         spy_player_id, spy_player_name = group[0]
         civilian_players = group[1:]
 
-        # Create message for the spy
         other_spy_names = [s["name"] for s in all_spies if s["id"] != spy_player_id]
-        spy_message = "คุณคือ Spy! 🕵️‍♂️\nภารกิจของคุณและทีมของคุณคือการแทรกซึมกลุ่มอื่น ๆ ให้ครบทุกกลุ่ม โดยห้ามให้ใครรู้ว่าคุณคือ Spy"
+        spy_message = "คุณคือ Spy! 🕵️‍♂️\nภารกิจของคุณคือการหาให้ได้ว่าทุกคนอยู่ที่ไหน โดยห้ามให้ใครรู้ว่าคุณคือสปาย"
         if other_spy_names:
-            spy_message += f"\n\nSpy ในกลุ่มอื่น ๆ คือ: {', '.join(other_spy_names)}"
+            spy_message += f"\n\nสปายในกลุ่มอื่นๆ คือ: {', '.join(other_spy_names)}"
         message_assignments.append((spy_player_id, spy_message))
 
-        # Create civilian group details for the results page
         civilian_group_details = {
+            "id": i + 1,
             "location": location,
-            "members": []
+            "members": [{"id": spy_player_id, "name": spy_player_name, "role": "Spy"}],
+            "charades": charade_words_for_group,
+            "taboos": taboo_words_for_group,
+            "score": 0
         }
 
-        # Add this group's spy to the group details for display
-        civilian_group_details["members"].append(f"{spy_player_name} (Spy)")
-
-        # Create messages and details for civilians
         for j, (civilian_id, civilian_name) in enumerate(civilian_players):
             career = available_careers[j % len(available_careers)]
             civilian_message = f"สถานที่: {location}\nบทบาทของคุณ: {career}"
             message_assignments.append((civilian_id, civilian_message))
-            civilian_group_details["members"].append(f"{civilian_name} (Role: {career})")
+            civilian_group_details["members"].append({"id": civilian_id, "name": civilian_name, "role": career})
 
         game_results["civilian_groups"].append(civilian_group_details)
 
     return message_assignments, game_results
 
 
-def assign_insider_roles(player_ids):
-    """Assigns roles for Insider and returns a list of (user_id, message) tuples."""
-    assignments = []
-    secret_word = random.choice(INSIDER_WORDS)
-    insider_id = player_ids[0]
-    people_ids = player_ids[1:]
+def assign_taboo_words(groups_of_players):
+    """
+    Generates words for a new round of Taboo using pre-existing groups of players.
+    """
+    game_results = {
+        "game_type": "taboo",
+        "groups": []
+    }
 
-    # Insider's message
-    insider_message = f"คุณคือ Insider! 🤫\nคำลับคือ: \"{secret_word}\"\nพยายามชี้นำให้คนอื่นทายคำนี้ให้ถูก โดยห้ามให้ใครรู้ว่าคุณรู้คำใบ้"
-    assignments.append((insider_id, insider_message))
+    shuffled_charades = random.sample(CHARADE_WORDS, len(CHARADE_WORDS))
+    shuffled_taboos = random.sample(TABOO_WORDS, len(TABOO_WORDS))
 
-    # Civilians' message
-    civilian_message = "คุณคือชาวบ้านธรรมดา 🙋‍♀️\nร่วมมือกับคนอื่นเพื่อหาคำลับให้เจอ แต่ระวัง! มีคนหนึ่งในพวกเรารู้คำใบ้อยู่แล้ว (Insider)"
-    for uid in people_ids:
-        assignments.append((uid, civilian_message))
+    for i, group_players in enumerate(groups_of_players):
+        if not group_players:
+            continue
 
-    return assignments
+        charade_words_for_group = shuffled_charades[i * 15: (i + 1) * 15]
+        taboo_words_for_group = shuffled_taboos[i * 5: (i + 1) * 5]
+
+        game_results["groups"].append({
+            "id": i + 1,
+            "players": group_players,  # The players list already contains {'id':..., 'name':...}
+            "charades": charade_words_for_group,
+            "taboos": taboo_words_for_group,
+            "score": 0
+        })
+
+    return game_results

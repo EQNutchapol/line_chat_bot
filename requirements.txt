@@ -3,3 +3,4 @@ line-bot-sdk
 pyngrok
 python-dotenv
 flask
+# Add docker database and keep user in database instead

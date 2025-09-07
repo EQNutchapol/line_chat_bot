@@ -6,9 +6,9 @@ from linebot import LineBotApi, WebhookHandler
 from pyngrok import ngrok
 
 # Import config and blueprints
-from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, NG_GROK_DOMAIN
-from bot_handlers import bot_bp, init_bot
-from admin_routes import admin_bp, init_admin
+from build.config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, NG_GROK_DOMAIN
+from build.bot_handlers import bot_bp, init_bot
+from build.admin_routes import admin_bp, init_admin
 
 # --- Main App Setup ---
 app = Flask(__name__, template_folder='templates')

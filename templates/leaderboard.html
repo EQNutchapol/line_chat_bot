@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaderboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; color: #202124; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background-color: #ffc107; color: #212529; padding: 1.5rem; border-top-left-radius: 8px; border-top-right-radius: 8px; text-align: center;}
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        .content { padding: 2rem; }
+        .rank-table { width: 100%; border-collapse: collapse; }
+        .rank-table th, .rank-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; vertical-align: middle;}
+        .rank-table th { background-color: #e9ecef; }
+        .rank-1 { font-weight: 700; color: #d4af37; } /* Gold */
+        .rank-2 { font-weight: 700; color: #c0c0c0; } /* Silver */
+        .rank-3 { font-weight: 700; color: #cd7f32; } /* Bronze */
+        .button-nav { text-align: center; margin-top: 2rem; }
+        .button {
+            padding: 10px 20px; color: white; text-decoration: none;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 700;
+        }
+        .back-button { background-color: #6c757d; }
+        .new-game-btn { background-color: #28a745; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h1>🏆 Leaderboard 🏆</h1></div>
+        <div class="content">
+            <form id="new-game-form" action="/new_taboo_game" method="post">
+                <table class="rank-table">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Rank</th>
+                            <th>Group</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in ranked_groups %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="selected_groups" value="{{ group.id }}">
+                                <!-- This hidden input now stores the full player data as a JSON string -->
+                                <input type="hidden" name="group_{{ group.id }}_players" value="{{ group.players | tojson | safe }}">
+                            </td>
+                            <td class="rank-{{ loop.index }}">{{ loop.index }}</td>
+                            <td>Group {{ group.id }}</td>
+                            <td>{{ group.score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="button-nav">
+                    <a href="/admin" class="button back-button">Back to Admin Panel</a>
+                    <button type="submit" class="button new-game-btn">Start New Taboo Game with Selected Groups</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

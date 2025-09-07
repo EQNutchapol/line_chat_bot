@@ -12,19 +12,32 @@
         .header h1 { margin: 0; font-size: 1.8rem; }
         .content { padding: 2rem; }
         .group-card { background-color: #f1f3f4; border-radius: 8px; margin-bottom: 1.5rem; padding: 1.5rem; }
-        .group-card h2 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #ddd; padding-bottom: 8px;}
+        .group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+        .group-header h2 { margin: 0; color: #1a73e8; border: none; }
+        .score-box { display: flex; align-items: center; }
+        .score-display { font-size: 1.5rem; font-weight: 700; margin-right: 10px; }
         .spy-list { background-color: #fff0f0; border: 1px solid #dc3545; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .spy-list h2 { color: #dc3545; margin-top: 0; }
+        .spy-list h2 { color: #dc3545; }
         ul { list-style: none; padding-left: 0; }
-        li { background-color: #e9ecef; padding: 8px; border-radius: 4px; margin-bottom: 5px; }
+        li { background-color: #e9ecef; padding: 8px; border-radius: 4px; margin-bottom: 5px; cursor: pointer; transition: background-color 0.2s; }
+        li.charade-word.clicked { background-color: #28a745; color: white; text-decoration: line-through; }
+        li.taboo-word.clicked { background-color: #dc3545; color: white; text-decoration: line-through; }
         .button-nav { text-align: center; margin-top: 2rem; }
-        .button {
-            padding: 10px 20px; color: white; text-decoration: none;
+        .button, .action-btn {
+            padding: 10px 15px; color: white; text-decoration: none;
             border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 700;
-            transition: background-color 0.3s; margin: 0 10px;
+            transition: background-color 0.3s; margin: 5px;
         }
         .back-button { background-color: #6c757d; }
-        .back-button:hover { background-color: #5a6268; }
+        .leaderboard-btn { background-color: #ffc107; color: #212529; }
+        .clear-score-btn { background-color: #6c757d; font-size: 0.8rem; padding: 5px 10px;}
+        .show-words-btn { background-color: #007bff; }
+        .timer-btn { background-color: #17a2b8; }
+        .stop-timer-btn { background-color: #fd7e14; }
+        .timer-display { font-size: 1.2rem; font-weight: 700; color: #17a2b8; margin-left: 10px; }
+        .word-container { display: none; margin-top: 15px; }
+        .word-list { display: flex; justify-content: space-between; gap: 20px; }
+        .word-list div { width: 48%; }
     </style>
 </head>
 <body>
@@ -32,7 +45,6 @@
         <div class="header"><h1>Spyfall Game Results</h1></div>
         <div class="content">
 
-            <!-- Spy Group Display -->
             <div class="spy-list">
                 <h2>All Spies 🕵️‍♂️</h2>
                 <ul>
@@ -42,22 +54,159 @@
                 </ul>
             </div>
 
-            <!-- Civilian Groups Display -->
             {% for group in results.civilian_groups %}
-            <div class="group-card">
-                <h2>Group {{ loop.index }} - Location: {{ group.location }}</h2>
+            <div class="group-card" id="group-card-{{ loop.index }}">
+                <div class="group-header">
+                    <h2>Group {{ loop.index }} - Location: {{ group.location }}</h2>
+                    <div class="score-box">
+                        <span class="score-display" id="score-{{ loop.index }}">{{ group.score }}</span>
+                        <button class="action-btn clear-score-btn" onclick="clearScore({{ loop.index }})">Clear Score</button>
+                    </div>
+                </div>
                 <ul>
                     {% for member_info in group.members %}
                         <li>{{ member_info }}</li>
                     {% endfor %}
                 </ul>
+
+                <div>
+                    <button class="action-btn show-words-btn" onclick="toggleWords('words-{{ loop.index }}')">Show Words</button>
+                    <button class="action-btn timer-btn" id="start-btn-{{ loop.index }}" onclick="startTimer(90, 'timer-{{ loop.index }}', this)">Start Timer</button>
+                    <button class="action-btn stop-timer-btn" onclick="stopTimer('timer-{{ loop.index }}', 'start-btn-{{ loop.index }}')">Stop Timer</button>
+                    <span class="timer-display" id="timer-{{ loop.index }}">90s</span>
+                </div>
+
+                <div id="words-{{ loop.index }}" class="word-container">
+                    <div class="word-list">
+                        <div>
+                            <h3>Charade Words (+1)</h3>
+                            <ul id="charades-{{ loop.index }}">
+                                {% for word in group.charades %}
+                                    <!-- The onclick attribute is removed from here -->
+                                    <li class="charade-word">{{ word }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>Taboo Words (-2)</h3>
+                            <ul id="taboos-{{ loop.index }}">
+                                {% for word in group.taboos %}
+                                    <!-- The onclick attribute is removed from here -->
+                                    <li class="taboo-word">{{ word }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% endfor %}
 
             <div class="button-nav">
                 <a href="/admin" class="button back-button">Back to Admin Panel</a>
+                <button class="button leaderboard-btn" onclick="viewLeaderboard()">View Leaderboard</button>
             </div>
+
+            <!-- Hidden form to submit score data -->
+            <form id="leaderboard-form" action="/leaderboard" method="post" style="display: none;">
+                <input type="hidden" name="scores_data" id="scores-data-input">
+            </form>
         </div>
     </div>
+
+    <script>
+        const timerIntervals = {};
+
+        // --- NEW EVENT LISTENER SETUP ---
+        // This runs once the page is fully loaded and attaches click events to all words.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Find all list items that are either a charade or a taboo word
+            document.querySelectorAll('li.charade-word, li.taboo-word').forEach(li => {
+                li.addEventListener('click', function() {
+                    // 'this' refers to the clicked <li> element
+
+                    // Find the parent group card to get the group index
+                    const groupCard = this.closest('.group-card');
+                    const groupIndex = groupCard.id.split('-').pop();
+
+                    // Determine the score change based on the word's class
+                    const scoreChange = this.classList.contains('charade-word') ? 1 : -2;
+
+                    // Call the handler function with the correct element and values
+                    handleWordClick(this, scoreChange, groupIndex);
+                });
+            });
+        });
+
+
+        function handleWordClick(element, scoreChange, groupIndex) {
+            if (element.classList.contains('clicked')) {
+                // If already clicked, unclick it and reverse the score change
+                element.classList.remove('clicked');
+                updateScore(groupIndex, -scoreChange);
+            } else {
+                element.classList.add('clicked');
+                updateScore(groupIndex, scoreChange);
+            }
+        }
+
+        function updateScore(groupIndex, change) {
+            const scoreElement = document.getElementById(`score-${groupIndex}`);
+            let currentScore = parseInt(scoreElement.textContent);
+            scoreElement.textContent = currentScore + change;
+        }
+
+        function clearScore(groupIndex) {
+            const scoreElement = document.getElementById(`score-${groupIndex}`);
+            scoreElement.textContent = '0';
+            // Un-highlight all words for this group
+            document.querySelectorAll(`#charades-${groupIndex} li, #taboos-${groupIndex} li`).forEach(li => {
+                li.classList.remove('clicked');
+            });
+        }
+
+        function viewLeaderboard() {
+            const scoresData = [];
+            const groupCards = document.querySelectorAll('.group-card');
+            groupCards.forEach(card => {
+                const groupId = card.id.split('-').pop();
+                const score = document.getElementById(`score-${groupId}`).textContent;
+                scoresData.push({ id: groupId, score: parseInt(score) });
+            });
+
+            document.getElementById('scores-data-input').value = JSON.stringify(scoresData);
+            document.getElementById('leaderboard-form').submit();
+        }
+
+        function toggleWords(elementId) {
+            const wordContainer = document.getElementById(elementId);
+            wordContainer.style.display = (wordContainer.style.display === 'none' || wordContainer.style.display === '') ? 'block' : 'none';
+        }
+
+        function startTimer(duration, elementId, button) {
+            if (timerIntervals[elementId]) clearInterval(timerIntervals[elementId]);
+            let timer = duration;
+            const display = document.getElementById(elementId);
+            button.disabled = true;
+            display.style.color = '#17a2b8';
+            display.textContent = timer + "s";
+            timerIntervals[elementId] = setInterval(() => {
+                timer--;
+                display.textContent = timer + "s";
+                if (timer < 0) {
+                    clearInterval(timerIntervals[elementId]);
+                    display.textContent = "Time's up!";
+                    display.style.color = '#dc3545';
+                    button.disabled = false;
+                }
+            }, 1000);
+        }
+
+        function stopTimer(elementId, startButtonId) {
+            if (timerIntervals[elementId]) clearInterval(timerIntervals[elementId]);
+            document.getElementById(elementId).textContent = "90s";
+            document.getElementById(elementId).style.color = '#17a2b8';
+            document.getElementById(startButtonId).disabled = false;
+        }
+    </script>
 </body>
 </html>
